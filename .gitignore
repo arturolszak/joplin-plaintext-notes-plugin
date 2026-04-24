@@ -1,3 +1,7 @@
+node_modules/
+dist/
+publish/
+
 .claude/
 .cursor/
 .github/

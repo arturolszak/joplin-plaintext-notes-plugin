@@ -1,0 +1,19 @@
+/* Plaintext note view — renders like normal text, no code styling */
+.plaintext-note-view {
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	color: inherit;
+	padding: 0;
+	margin: 0;
+	background: none;
+	border: none;
+}
+
+.plaintext-note-view p {
+	margin: 0 0 1em 0;
+}
+
+.plaintext-note-view p:last-child {
+	margin-bottom: 0;
+}
