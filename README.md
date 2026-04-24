@@ -1,0 +1,1 @@
+# joplin-plaintext-notes-plugin
