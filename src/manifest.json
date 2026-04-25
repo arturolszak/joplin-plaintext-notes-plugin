@@ -4,10 +4,10 @@
 	"app_min_version": "2.10",
 	"app_min_version_mobile": "3.0.3",
 	"platforms": ["desktop", "mobile"],
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"name": "Plaintext Notes",
 	"description": "Toggle notes to plaintext mode — markdown is not interpreted when viewing or editing.",
 	"author": "Artur",
-	"homepage_url": "https://github.com/arturolszak/joplin-plaintext-notes-plugin",
+	"homepage_url": "https://github.com/crestreach/joplin-plaintext-notes-plugin",
 	"categories": ["productivity", "personal knowledge management"]
 }

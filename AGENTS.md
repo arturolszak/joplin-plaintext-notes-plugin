@@ -4,7 +4,7 @@
 
 This is a Joplin plugin for plaintext notes. It is part of a family of Joplin plugins located under the `joplin_plugins` workspace (siblings: `joplin-encrypted-notes-plugin`, `joplin-note-boards-plugin`).
 
-- **Repository:** https://github.com/arturolszak/joplin-plaintext-notes-plugin
+- **Repository:** https://github.com/crestreach/joplin-plaintext-notes-plugin
 - **Language/Stack:** TypeScript (Joplin Plugin API)
 
 ## Rules
