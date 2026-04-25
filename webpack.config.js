@@ -22,8 +22,29 @@ const distDir = path.resolve(rootDir, 'dist');
 const srcDir = path.resolve(rootDir, 'src');
 const publishDir = path.resolve(rootDir, 'publish');
 
+const externalContentScriptLibraries = [
+	'@codemirror/view',
+	'@codemirror/state',
+	'@codemirror/search',
+	'@codemirror/language',
+	'@codemirror/autocomplete',
+	'@codemirror/commands',
+	'@codemirror/highlight',
+	'@codemirror/lint',
+	'@codemirror/lang-html',
+	'@codemirror/lang-markdown',
+	'@codemirror/language-data',
+	'@lezer/common',
+	'@lezer/markdown',
+	'@lezer/highlight',
+];
+const extraScriptExternals = {};
+for (const library of externalContentScriptLibraries) {
+	extraScriptExternals[library] = { commonjs: library };
+}
+
 const userConfig = {
-	extraScripts: ['contentScripts/plaintextViewer.ts'],
+ extraScripts: ['contentScripts/plaintextViewer.ts', 'contentScripts/plaintextEditor.ts'],
 	...(fs.pathExistsSync(userConfigPath) ? require(userConfigFilename) : {}),
 };
 
@@ -254,9 +275,10 @@ function buildExtraScriptConfigs(userConfig) {
 				fallback: moduleFallback,
 				extensions: ['.js', '.tsx', '.ts', '.json'],
 			},
-			externalsType: 'commonjs',
-			entry: scriptPaths.entry,
-			output: scriptPaths.output,
+					externalsType: 'commonjs',
+					externals: extraScriptExternals,
+					entry: scriptPaths.entry,
+					output: scriptPaths.output,
 		});
 	}
 	return output;

@@ -15,6 +15,10 @@
 	},
 	"license": "MIT",
 	"devDependencies": {
+		"@codemirror/language": "^6.12.3",
+		"@codemirror/state": "^6.6.0",
+		"@codemirror/view": "^6.41.1",
+		"@lezer/common": "^1.5.2",
 		"@types/node": "^18.0.0",
 		"chalk": "^4.1.2",
 		"copy-webpack-plugin": "^11.0.0",

@@ -16,44 +16,9 @@ const COMMANDS = {
 };
 
 const CONTENT_SCRIPT_ID = 'plaintextNotesViewer';
+const EDITOR_CONTENT_SCRIPT_ID = 'plaintextNotesEditor';
 
-const PLAINTEXT_OPEN_RE = /^```plaintext\s*$/m;
 const ENCRYPTED_FENCE_RE = /^```encrypted-note\b/m;
-
-// ---------------------------------------------------------------------------
-// Plaintext helpers
-// ---------------------------------------------------------------------------
-
-function isPlaintextNote(body: string): boolean {
-	const trimmed = body.trim();
-	return (
-		trimmed.startsWith('```plaintext\n') ||
-		trimmed.startsWith('```plaintext\r\n')
-	);
-}
-
-function unwrapPlaintext(body: string): string {
-	let trimmed = body.trim();
-	// Remove opening fence
-	if (trimmed.startsWith('```plaintext\r\n')) {
-		trimmed = trimmed.slice('```plaintext\r\n'.length);
-	} else if (trimmed.startsWith('```plaintext\n')) {
-		trimmed = trimmed.slice('```plaintext\n'.length);
-	}
-	// Remove closing fence (check \r\n before \n)
-	if (trimmed.endsWith('\r\n```')) {
-		trimmed = trimmed.slice(0, -'\r\n```'.length);
-	} else if (trimmed.endsWith('\n```')) {
-		trimmed = trimmed.slice(0, -'\n```'.length);
-	} else if (trimmed.endsWith('```')) {
-		trimmed = trimmed.slice(0, -'```'.length);
-	}
-	return trimmed;
-}
-
-function wrapPlaintext(body: string): string {
-	return '```plaintext\n' + body + '\n```';
-}
 
 // ---------------------------------------------------------------------------
 // Plugin registration
@@ -68,12 +33,19 @@ joplin.plugins.register({
 			'./contentScripts/plaintextViewer.js',
 		);
 
+		// --- Content script (plaintext editor styling in CM6) ---
+		await joplin.contentScripts.register(
+			ContentScriptType.CodeMirrorPlugin,
+			EDITOR_CONTENT_SCRIPT_ID,
+			'./contentScripts/plaintextEditor.js',
+		);
+
 		// --- Commands ---
 		await joplin.commands.register({
 			name: COMMANDS.TOGGLE,
 			label: 'Toggle Plaintext Mode',
 			enabledCondition: 'oneNoteSelected',
-			iconName: 'fas fa-file-alt',
+			iconName: 'fas fa-remove-format',
 			execute: async () => {
 				try {
 					await togglePlaintext();
@@ -84,6 +56,12 @@ joplin.plugins.register({
 		});
 
 		// --- Toolbar & Menu ---
+		await joplin.views.toolbarButtons.create(
+			`${PLUGIN_ID}.editorToolbar`,
+			COMMANDS.TOGGLE,
+			ToolbarButtonLocation.EditorToolbar,
+		);
+
 		await joplin.views.toolbarButtons.create(
 			`${PLUGIN_ID}.toolbar`,
 			COMMANDS.TOGGLE,
@@ -102,7 +80,7 @@ joplin.plugins.register({
 });
 
 // ---------------------------------------------------------------------------
-// Toggle plaintext
+// Toggle plaintext — updates note body via data API and reloads the note
 // ---------------------------------------------------------------------------
 
 async function togglePlaintext() {
@@ -111,19 +89,62 @@ async function togglePlaintext() {
 
 	const body: string = note.body || '';
 
-	// Prevent wrapping an encrypted note inside ```plaintext.
+	// Prevent wrapping an encrypted note inside ```plaintext
 	if (!isPlaintextNote(body) && ENCRYPTED_FENCE_RE.test(body.trim())) {
 		console.warn('[PlaintextNotes] Cannot toggle plaintext on an encrypted note. Decrypt first.');
 		return;
 	}
 
-	if (isPlaintextNote(body)) {
-		const inner = unwrapPlaintext(body);
-		await joplin.data.put(['notes', note.id], null, { body: inner });
-	} else {
-		const wrapped = wrapPlaintext(body);
-		await joplin.data.put(['notes', note.id], null, { body: wrapped });
+	// Try to toggle directly in the editor via the registered CM command.
+	// This modifies the document in-place so the change is visible immediately
+	// and Joplin's own auto-save will persist it.
+	try {
+		await joplin.commands.execute('editor.execCommand', {
+			name: 'togglePlaintext',
+		});
+	} catch {
+		// Fallback for platforms where editor.execCommand is unavailable:
+		// update via data API and reload the note.
+		if (isPlaintextNote(body)) {
+			await joplin.data.put(['notes', note.id], null, { body: unwrapPlaintext(body) });
+		} else {
+			await joplin.data.put(['notes', note.id], null, { body: wrapPlaintext(body) });
+		}
+		await joplin.commands.execute('openNote', note.id);
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Plaintext helpers
+// ---------------------------------------------------------------------------
+
+function isPlaintextNote(body: string): boolean {
+	const trimmed = body.trim();
+	return (
+		trimmed.startsWith('```plaintext\n') ||
+		trimmed.startsWith('```plaintext\r\n')
+	);
+}
+
+function unwrapPlaintext(body: string): string {
+	let trimmed = body.trim();
+	if (trimmed.startsWith('```plaintext\r\n')) {
+		trimmed = trimmed.slice('```plaintext\r\n'.length);
+	} else if (trimmed.startsWith('```plaintext\n')) {
+		trimmed = trimmed.slice('```plaintext\n'.length);
+	}
+	if (trimmed.endsWith('\r\n```')) {
+		trimmed = trimmed.slice(0, -'\r\n```'.length);
+	} else if (trimmed.endsWith('\n```')) {
+		trimmed = trimmed.slice(0, -'\n```'.length);
+	} else if (trimmed.endsWith('```')) {
+		trimmed = trimmed.slice(0, -'```'.length);
+	}
+	return trimmed;
+}
+
+function wrapPlaintext(body: string): string {
+	return '```plaintext\n' + body + '\n```';
 }
 
 // ---------------------------------------------------------------------------
